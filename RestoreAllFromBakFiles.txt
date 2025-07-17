@@ -1,0 +1,35 @@
+DECLARE @Counter INT = 1;
+DECLARE @DatabaseName NVARCHAR(255);
+DECLARE @BackupFile NVARCHAR(255);
+DECLARE @LogicalDataFile NVARCHAR(255);
+DECLARE @LogicalLogFile NVARCHAR(255);
+DECLARE @RestoreSQL NVARCHAR(MAX);
+
+-- Define variables for backup file paths and logical names
+DECLARE @BackupFiles NVARCHAR(255) = 'C:\Backups\Backup1.bak, C:\Backups\Backup2.bak, C:\Backups\Backup3.bak';
+DECLARE @LogicalDataFiles NVARCHAR(255) = 'Database1_Data, Database2_Data, Database3_Data';
+DECLARE @LogicalLogFiles NVARCHAR(255) = 'Database1_Log, Database2_Log, Database3_Log';
+
+-- Split the comma-separated string into individual elements using a WHILE loop
+WHILE @Counter <= 3  -- Change this to match the number of backups you have
+BEGIN
+    -- Extract each element (backup file, logical data, and logical log) based on the counter
+    SET @BackupFile = PARSENAME(REPLACE(SUBSTRING(@BackupFiles, CHARINDEX(',', @BackupFiles) * (@Counter - 1) + 1, CHARINDEX(',', @BackupFiles + ',', CHARINDEX(',', @BackupFiles) * @Counter) - CHARINDEX(',', @BackupFiles) * (@Counter - 1) - 1), ',', '.'), 1);
+    SET @LogicalDataFile = PARSENAME(REPLACE(SUBSTRING(@LogicalDataFiles, CHARINDEX(',', @LogicalDataFiles) * (@Counter - 1) + 1, CHARINDEX(',', @LogicalDataFiles + ',', CHARINDEX(',', @LogicalDataFiles) * @Counter) - CHARINDEX(',', @LogicalDataFiles) * (@Counter - 1) - 1), ',', '.'), 1);
+    SET @LogicalLogFile = PARSENAME(REPLACE(SUBSTRING(@LogicalLogFiles, CHARINDEX(',', @LogicalLogFiles) * (@Counter - 1) + 1, CHARINDEX(',', @LogicalLogFiles + ',', CHARINDEX(',', @LogicalLogFiles) * @Counter) - CHARINDEX(',', @LogicalLogFiles) * (@Counter - 1) - 1), ',', '.'), 1);
+    
+    -- Generate the dynamic database name (e.g., Database1, Database2, etc.)
+    SET @DatabaseName = 'Database' + CAST(@Counter AS NVARCHAR(10));
+
+    -- Build the RESTORE DATABASE SQL command dynamically
+    SET @RestoreSQL = 'RESTORE DATABASE [' + @DatabaseName + '] ' +
+                      'FROM DISK = ''' + @BackupFile + ''' ' +
+                      'WITH MOVE ''' + @LogicalDataFile + ''' TO ''C:\SQLData\' + @DatabaseName + '_Data.mdf'', ' +
+                      'MOVE ''' + @LogicalLogFile + ''' TO ''C:\SQLLogs\' + @DatabaseName + '_Log.ldf'';';
+    
+    -- Execute the dynamic SQL to restore the database
+    EXEC sp_executesql @RestoreSQL;
+
+    -- Increment the counter to move to the next backup
+    SET @Counter = @Counter + 1;
+END;
