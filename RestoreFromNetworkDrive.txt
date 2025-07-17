@@ -1,0 +1,19 @@
+EXEC sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+
+EXEC sp_configure 'xp_cmdshell',1;
+GO
+RECONFIGURE;
+GO
+
+EXEC XP_CMDSHELL 'net use \\domain.com\SharedDevFiles\DB_Backups.NEW /user:username@domain.com password'
+EXEC XP_CMDSHELL 'Dir H:'
+
+RESTORE DATABASE MyDatabase
+FROM DISK=N'H:\MyDatabase.bak'
+WITH
+	MOVE N'MyDatabase' to 'C:\Program Files\Microsoft SQL Server\MSSQL16.MYINSTANCE\MSSQL\DATA\MyDatabase.mdf',
+	MOVE N'MyDatabase_log' to 'C:\Program Files\Microsoft SQL Server\MSSQL16.MYINSTANCE\MSSQL\DATA\MyDatabase_log.ldf',
+	RECOVERY,REPLACE;
